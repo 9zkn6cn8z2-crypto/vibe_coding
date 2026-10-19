@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>聚餐買單抽籤神器</title>
+<style>
+:root{--bg:#0b0618;--panel:#150c2c;--line:#3a2468;--pink:#ff2bd6;--cyan:#27f0ff;--lime:#b6ff3b;--red:#ff3b4e;--txt:#f3eaff;--mute:#9a8bc2}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:radial-gradient(900px 500px at 10% -10%,#3a0f63 0,transparent 60%),radial-gradient(800px 500px at 100% 0,#06335a 0,transparent 55%),var(--bg);color:var(--txt);font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;padding:24px 14px 60px}
+.wrap{max-width:760px;margin:0 auto}
+h1{font-size:clamp(28px,6vw,44px);margin:0 0 4px;color:var(--pink);text-shadow:0 0 8px var(--pink),0 0 28px #ff2bd680;letter-spacing:2px}
+.sub{color:var(--mute);margin:0 0 22px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px;box-shadow:0 0 0 1px #0004,0 0 24px #7a2cff22}
+h2{margin:0 0 12px;font-size:18px;color:var(--cyan);text-shadow:0 0 10px #27f0ff80}
+label{display:block;font-size:14px;color:var(--mute);margin-bottom:6px}
+input,select{width:100%;background:#0d0720;border:1px solid var(--line);color:var(--txt);border-radius:9px;padding:10px 12px;font-size:16px;outline:none;transition:.2s}
+input:focus,select:focus{border-color:var(--cyan);box-shadow:0 0 12px #27f0ff55}
+input[readonly]{background:#1b1238;color:var(--lime);border-style:dashed;cursor:not-allowed}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.row .idx{color:var(--mute);width:62px;flex:none;font-size:13px}
+.pct{position:relative;flex:1}.pct input{padding-right:30px}.pct b{position:absolute;right:12px;top:10px;color:var(--mute)}
+button{font:inherit;cursor:pointer;border:1px solid var(--pink);background:transparent;color:var(--pink);padding:10px 16px;border-radius:10px;transition:.2s;font-weight:700}
+button:hover:not(:disabled){background:var(--pink);color:#18002a;box-shadow:0 0 18px var(--pink);transform:translateY(-1px)}
+button:active:not(:disabled){transform:scale(.97)}
+button.c{border-color:var(--cyan);color:var(--cyan)}button.c:hover:not(:disabled){background:var(--cyan);color:#001a2a;box-shadow:0 0 18px var(--cyan)}
+button.x{padding:8px 11px;border-color:var(--line);color:var(--mute)}button.x:hover:not(:disabled){background:var(--red);border-color:var(--red);color:#fff;box-shadow:0 0 14px var(--red)}
+button:disabled{opacity:.35;cursor:not-allowed}
+.modes{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+.modes button{padding:16px 10px;font-size:17px}
+.warn{color:var(--red);font-weight:700;text-shadow:0 0 10px #ff3b4e80;min-height:22px;margin:6px 0}
+.hint{color:var(--mute);font-size:13px}
+.hide{display:none!important}
+.bar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.status{color:var(--lime)}
+/* cards */
+.board{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:14px}
+.card{perspective:800px;height:150px;cursor:pointer}
+.card .in{position:relative;width:100%;height:100%;transition:transform .7s cubic-bezier(.2,.8,.2,1);transform-style:preserve-3d}
+.card.flip .in{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;backface-visibility:hidden;border:2px solid var(--pink);text-align:center;padding:6px}
+.front{background:repeating-linear-gradient(45deg,#220a45 0 10px,#2c0d58 10px 20px);font-size:40px;box-shadow:0 0 16px #ff2bd655;color:var(--pink)}
+.card:not(.flip):hover .front{box-shadow:0 0 28px var(--pink);transform:translateY(-4px)}
+.front{transition:.2s}
+.back{transform:rotateY(180deg);background:#12062a;font-size:30px;font-weight:900}
+.back small{font-size:13px;color:var(--mute);font-weight:400;margin-top:4px}
+.back.pay{border-color:var(--red);color:var(--red);box-shadow:0 0 22px #ff3b4e88}
+.back.safe{border-color:var(--lime);color:var(--lime);box-shadow:0 0 22px #b6ff3b77}
+/* turn banner */
+.turn{text-align:center;font-size:19px;margin-bottom:14px;padding:10px;border:1px dashed var(--cyan);border-radius:10px;color:var(--cyan);min-height:52px}
+.turn b{color:var(--pink);font-size:26px;text-shadow:0 0 12px var(--pink);display:inline-block;animation:pulse 1.2s ease-in-out infinite}
+.turn strong{color:var(--red);font-size:28px;text-shadow:0 0 12px #ff3b4e}
+@keyframes pulse{50%{transform:scale(1.12)}}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;justify-content:center}
+.chip{padding:5px 11px;border-radius:999px;border:1px solid var(--line);font-size:13px;animation:fade .4s}
+.chip.pay{border-color:var(--red);color:var(--red)}.chip.safe{border-color:var(--lime);color:var(--lime)}
+/* wheel */
+.wheelWrap{position:relative;margin:26px auto 0}
+.pointer{position:absolute;left:50%;top:-22px;transform:translateX(-50%);width:0;height:0;border-left:16px solid transparent;border-right:16px solid transparent;border-top:36px solid var(--lime);filter:drop-shadow(0 0 8px var(--lime));z-index:2}
+.wheel{display:block;border-radius:50%;box-shadow:0 0 0 4px var(--pink),0 0 34px #ff2bd677}
+.spinbox{text-align:center;margin-top:18px}
+.spinbox button{font-size:18px;padding:12px 34px}
+/* ladder */
+.lw{overflow-x:auto;padding-bottom:6px}
+.ladder{position:relative;margin:0 auto}
+.ladder canvas{display:block}
+.names,.ends{position:absolute;left:0;right:0;display:flex}
+.names{top:0}.ends{bottom:0}
+.names button,.ends div{position:absolute;transform:translateX(-50%);width:84px;padding:6px 2px;font-size:13px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ends div{border:1px solid var(--line);border-radius:8px;background:#0d0720;color:var(--mute);transition:.4s;font-weight:700}
+.ends div.show.pay{color:var(--red);border-color:var(--red);box-shadow:0 0 14px #ff3b4e88}
+.ends div.show.safe{color:var(--lime);border-color:var(--lime);box-shadow:0 0 14px #b6ff3b77}
+.names button.used{opacity:.4}
+/* modal */
+.mask{position:fixed;inset:0;background:#05020dd0;display:flex;align-items:center;justify-content:center;padding:14px;z-index:9;backdrop-filter:blur(4px);animation:fade .3s}
+@keyframes fade{from{opacity:0}}
+.modal{background:var(--panel);border:1px solid var(--pink);border-radius:16px;padding:20px;max-width:560px;width:100%;max-height:90vh;overflow:auto;box-shadow:0 0 40px #ff2bd655}
+table{width:100%;border-collapse:collapse;margin:10px 0 14px}
+th,td{padding:9px 6px;border-bottom:1px solid var(--line);text-align:left}
+th{color:var(--cyan);font-size:14px}
+td.r{text-align:right}.zero{color:var(--lime)}.owe{color:var(--red);font-weight:700}
+.total{font-size:15px;color:var(--mute)}
+.btns{display:flex;gap:10px;flex-wrap:wrap}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>買單抽籤神器</h1>
+  <p class="sub">誰請客，交給命運。</p>
+
+  <!-- SETUP -->
+  <section id="setup">
+    <div class="panel">
+      <label for="total">今晚總花費（元）</label>
+      <input id="total" type="number" inputmode="numeric" min="1" placeholder="例如 1000">
+    </div>
+    <div class="panel">
+      <h2>玩家名單</h2>
+      <label for="count">參與人數</label>
+      <select id="count"></select>
+      <div class="grid" id="names" style="margin-top:12px"></div>
+    </div>
+    <div class="panel">
+      <h2>買單比例籤筒</h2>
+      <p class="hint">最後一個籤會自動補滿到 100%。籤數少於人數時，其餘自動補「Safe 免單」籤。</p>
+      <div id="tickets"></div>
+      <div class="bar" style="margin:8px 0 0">
+        <button class="c" id="addT">＋ 新增買單籤</button>
+        <span class="hint" id="sumInfo"></span>
+      </div>
+      <div class="warn" id="warn"></div>
+    </div>
+    <div class="panel">
+      <h2>選擇遊戲模式</h2>
+      <div class="modes">
+        <button data-m="card" class="go">🃏 翻牌抽卡</button>
+        <button data-m="wheel" class="go">🎡 殘酷大轉盤</button>
+        <button data-m="ladder" class="go">🪜 命運爬梯子</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- GAME -->
+  <section id="game" class="hide">
+    <div class="bar">
+      <div id="gameTitle" style="font-size:20px;color:var(--cyan)"></div>
+      <div class="status" id="progress"></div>
+    </div>
+    <div class="panel" id="stage"></div>
+    <button class="x" id="back">← 放棄並返回設定</button>
+  </section>
+</div>
+
+<div class="mask hide" id="mask">
+  <div class="modal">
+    <h2>結算報表</h2>
+    <div class="total" id="tline"></div>
+    <table>
+      <thead><tr><th>玩家</th><th>比例</th><th style="text-align:right">應付金額</th></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div class="btns">
+      <button class="c" id="copy">📋 複製討債文案</button>
+      <button id="restart">🔄 重新開始</button>
+    </div>
+    <div class="hint" id="copied" style="margin-top:8px;min-height:18px"></div>
+  </div>
+</div>
+
+<script>
+const $=s=>document.querySelector(s);
+const state={names:[],tickets:[""],mode:null,pool:[],results:[],total:0};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const fmt=n=>{const v=Math.round(n*100)/100;return v.toLocaleString('zh-TW')};
+const pctText=p=>p>0?p+'%':'Safe!';
+
+/* ---------- Setup ---------- */
+const sel=$('#count');
+for(let i=2;i<=10;i++)sel.add(new Option(i+' 人',i,i===3,i===3));
+function renderNames(){
+  const n=+sel.value,old=[...document.querySelectorAll('.pname')].map(e=>e.value);
+  $('#names').innerHTML='';
+  for(let i=0;i<n;i++){
+    const inp=document.createElement('input');
+    inp.className='pname';inp.maxLength=8;inp.placeholder='玩家'+(i+1);
+    inp.value=old[i]!==undefined?old[i]:'玩家'+(i+1);
+    $('#names').appendChild(inp);
+  }
+  validate();
+}
+sel.onchange=renderNames;
+
+function renderTickets(){
+  const box=$('#tickets');box.innerHTML='';
+  const n=state.tickets.length;
+  state.tickets.forEach((v,i)=>{
+    const last=i===n-1,row=document.createElement('div');row.className='row';
+    row.innerHTML=`<span class="idx">買單籤 ${i+1}</span>
+      <div class="pct"><input type="number" min="0" max="100" inputmode="decimal" ${last?'readonly tabindex="-1"':''} placeholder="${last?'自動':'%'}"><b>%</b></div>
+      <button class="x" ${n<=1?'disabled':''} title="刪除">✕</button>`;
+    const inp=row.querySelector('input');
+    inp.value=v;
+    if(!last)inp.oninput=()=>{state.tickets[i]=inp.value;validate()};
+    row.querySelector('button').onclick=()=>{state.tickets.splice(i,1);renderTickets()};
+    box.appendChild(row);
+  });
+  validate();
+}
+$('#addT').onclick=()=>{
+  if(state.tickets.length>=+sel.value){$('#warn').textContent='買單籤數不能超過玩家人數';return}
+  state.tickets.push("");renderTickets();
+};
+
+/* 動態自動補齊：最後一欄 = 100 - 前面總和 */
+function validate(){
+  const n=state.tickets.length,inputs=document.querySelectorAll('#tickets input');
+  const head=state.tickets.slice(0,n-1).reduce((s,v)=>s+(parseFloat(v)||0),0);
+  const over=head>100, last=over?0:Math.round((100-head)*100)/100;
+  if(inputs[n-1]){inputs[n-1].value=last;state.tickets[n-1]=String(last)}
+  const players=+sel.value, tooMany=n>players;
+  const total=parseFloat($('#total').value);
+  let msg='';
+  if(over)msg='⚠ 比例總和超過 100%';
+  else if(tooMany)msg='⚠ 買單籤數量不可大於玩家人數';
+  $('#warn').textContent=msg;
+  $('#sumInfo').textContent=over?'':`前 ${n-1} 項合計 ${Math.round(head*100)/100}%`;
+  const ok=!over&&!tooMany&&total>0;
+  document.querySelectorAll('.go').forEach(b=>b.disabled=!ok);
+  return ok;
+}
+$('#total').oninput=validate;
+
+/* ---------- Start game ---------- */
+document.querySelectorAll('.go').forEach(b=>b.onclick=()=>{
+  if(!validate())return;
+  const n=+sel.value;
+  state.total=parseFloat($('#total').value);
+  state.names=[...document.querySelectorAll('.pname')].map((e,i)=>e.value.trim()||'玩家'+(i+1));
+  const pays=state.tickets.map(v=>parseFloat(v)||0);
+  while(pays.length<n)pays.push(0);            // 補安全籤
+  state.pool=shuffle(pays);
+  state.results=[];state.mode=b.dataset.m;
+  $('#setup').classList.add('hide');$('#game').classList.remove('hide');
+  ({card:startCard,wheel:startWheel,ladder:startLadder})[state.mode]();
+  window.scrollTo({top:0,behavior:'smooth'});
+});
+
+function progress(){const n=state.names.length;$('#progress').textContent=`已揭曉 ${state.results.filter(x=>x!==undefined).length} / ${n}`}
+function finishIf(){
+  progress();
+  if(state.results.filter(x=>x!==undefined).length===state.names.length)setTimeout(showResult,900);
+}
+
+/* 模式 A：翻牌（顯示輪到誰） */
+function startCard(){
+  $('#gameTitle').textContent='🃏 翻牌抽卡：輪流翻牌';
+  const st=$('#stage');
+  st.innerHTML='<div class="turn" id="turn"></div><div class="board"></div><div class="chips" id="chips"></div>';
+  const turn=$('#turn'),n=state.names.length;
+  const showTurn=()=>{
+    const who=state.results.filter(x=>x!==undefined).length;
+    turn.innerHTML=who<n?`輪到 <b>${esc(state.names[who])}</b> 翻牌！（第 ${who+1} / ${n} 位）`:'🎉 全員翻牌完成，結算中…';
+  };
+  state.pool.forEach(p=>{
+    const c=document.createElement('div');c.className='card';
+    c.innerHTML=`<div class="in"><div class="face front">?</div><div class="face back ${p>0?'pay':'safe'}">${pctText(p)}<small>${p>0?'請客':'免單'}</small></div></div>`;
+    c.onclick=()=>{
+      if(c.classList.contains('flip'))return;
+      const who=state.results.filter(x=>x!==undefined).length;
+      if(who>=n)return;
+      c.classList.add('flip');
+      state.results[who]=p;
+      const chip=document.createElement('span');chip.className='chip '+(p>0?'pay':'safe');
+      chip.textContent=`${state.names[who]}：${pctText(p)}`;$('#chips').appendChild(chip);
+      showTurn();finishIf();
+    };
+    st.querySelector('.board').appendChild(c);
+  });
+  showTurn();progress();
+}
+
+/* 模式 B：殘酷大轉盤（抽中者剔除） */
+function startWheel(){
+  $('#gameTitle').textContent='🎡 殘酷大轉盤：被轉到的人付錢';
+  const run=Symbol();state.run=run;
+  const alive=()=>state.run===run;
+  const penalties=state.pool.filter(p=>p>0);
+  const remaining=state.names.map((_,i)=>i);
+  const colors=['#ff2bd6','#27f0ff','#b6ff3b','#ffb82b','#9b6bff','#ff5c7a','#3bffa8','#6bb1ff','#ff8a2b','#e8ff3b'];
+  const size=Math.min(380,window.innerWidth-80);
+  let step=0,spinning=false;
+  const st=$('#stage');
+  st.innerHTML=`<div class="turn" id="callout"></div>
+    <div class="wheelWrap" style="width:${size}px;height:${size}px"><div class="pointer"></div>
+    <canvas class="wheel" id="wc" width="${size*2}" height="${size*2}" style="width:${size}px;height:${size}px"></canvas></div>
+    <div class="spinbox"><button id="spin">開始轉動</button></div><div class="chips" id="chips"></div>`;
+  const cv=$('#wc'),ctx=cv.getContext('2d'),spin=$('#spin'),callout=$('#callout');
+  function draw(){
+    ctx.setTransform(2,0,0,2,0,0);ctx.clearRect(0,0,size,size);
+    const n=remaining.length,seg=Math.PI*2/n,c=size/2,r=c-4;
+    remaining.forEach((pi,k)=>{
+      const a0=-Math.PI/2+k*seg;
+      ctx.beginPath();ctx.moveTo(c,c);ctx.arc(c,c,r,a0,a0+seg);ctx.closePath();
+      ctx.fillStyle=colors[pi%colors.length];ctx.fill();
+      ctx.strokeStyle='#0b0618';ctx.lineWidth=3;ctx.stroke();
+      ctx.save();ctx.translate(c,c);ctx.rotate(a0+seg/2);
+      ctx.fillStyle='#12062a';ctx.textAlign='right';ctx.textBaseline='middle';
+      const name=state.names[pi];
+      ctx.font=`900 ${Math.max(14,Math.min(24,Math.floor(r*1.1/Math.max(n,3))))}px sans-serif`;
+      ctx.fillText(name.length>6?name.slice(0,6)+'…':name,r-16,0);
+      ctx.restore();
+    });
+    ctx.beginPath();ctx.arc(c,c,22,0,Math.PI*2);ctx.fillStyle='#0b0618';ctx.fill();
+    ctx.strokeStyle='#ff2bd6';ctx.lineWidth=3;ctx.stroke();
+  }
+  function prompt(){
+    callout.innerHTML=`現在抽出：付 <strong>${penalties[step]}%</strong> 的買單者！<br><span class="hint">第 ${step+1} / ${penalties.length} 個買單籤，轉盤剩 ${remaining.length} 人</span>`;
+    $('#progress').textContent=`買單籤 ${step} / ${penalties.length} 已抽出`;
+  }
+  const addChip=(name,p)=>{const e=document.createElement('span');e.className='chip '+(p>0?'pay':'safe');e.textContent=`${name}：${pctText(p)}`;$('#chips').appendChild(e)};
+  spin.onclick=()=>{
+    if(spinning)return;spinning=true;spin.disabled=true;
+    const n=remaining.length,seg=360/n,win=Math.floor(Math.random()*n);
+    const off=(Math.random()-.5)*seg*.7;
+    const R=(5+Math.floor(Math.random()*3))*360+360-(win+.5)*seg+off;
+    cv.style.transition='transform 4.6s cubic-bezier(.12,.7,.08,1)';
+    cv.style.transform=`rotate(${R}deg)`;
+    callout.innerHTML='轉轉轉…誰會中獎？';
+    setTimeout(()=>{
+      if(!alive())return;
+      const pi=remaining[win],p=penalties[step];
+      state.results[pi]=p;addChip(state.names[pi],p);
+      callout.innerHTML=`🎯 <b>${esc(state.names[pi])}</b> 中獎！付 <strong>${p}%</strong>`;
+      remaining.splice(win,1);step++;
+      $('#progress').textContent=`買單籤 ${step} / ${penalties.length} 已抽出`;
+      setTimeout(()=>{
+        if(!alive())return;
+        if(step>=penalties.length){
+          remaining.forEach(i=>{state.results[i]=0;addChip(state.names[i],0)});
+          callout.innerHTML='其餘玩家全部 <b>免單</b>！結算中…';
+          setTimeout(()=>{if(alive())showResult()},1200);
+        }else{
+          cv.style.transition='none';cv.style.transform='rotate(0deg)';void cv.offsetWidth;
+          draw();prompt();spinning=false;spin.disabled=false;
+        }
+      },1500);
+    },4700);
+  };
+  draw();prompt();
+}
+
+/* 模式 C：爬梯子 */
+function startLadder(){
+  $('#gameTitle').textContent='🪜 命運爬梯子：點擊你的名字';
+  const n=state.names.length,colW=Math.max(96,Math.min(130,720/n));
+  const W=colW*n,H=380,top=48,bot=48,xs=[...Array(n)].map((_,i)=>colW*(i+.5));
+  const rungs=[],levels=9;
+  for(let l=0;l<levels;l++){
+    const y=top+(H-top-bot)*(l+1)/(levels+1);
+    let i=Math.floor(Math.random()*2);
+    for(;i<n-1;i+=2+Math.floor(Math.random()*2)){
+      if(Math.random()<.8)rungs.push({y:y+(Math.random()*10-5),a:i});
+    }
+  }
+  rungs.sort((a,b)=>a.y-b.y);
+  const st=$('#stage');
+  st.innerHTML=`<div class="lw"><div class="ladder" style="width:${W}px;height:${H}px">
+    <canvas width="${W*2}" height="${H*2}" style="width:${W}px;height:${H}px"></canvas>
+    <div class="names"></div><div class="ends"></div></div></div>
+    <p class="hint">每個人點自己的名字，看紅線爬到哪裡。</p>`;
+  const cv=st.querySelector('canvas'),ctx=cv.getContext('2d');ctx.scale(2,2);
+  const used=new Set(),colors=['#ff3b4e','#ff9f1a','#ffe53b','#27f0ff','#b6ff3b','#ff2bd6','#9b6bff','#ff7ab6','#3bffa8','#6bb1ff'];
+  function base(){
+    ctx.clearRect(0,0,W,H);ctx.lineCap='round';
+    ctx.strokeStyle='#5a3a9a';ctx.lineWidth=4;ctx.shadowColor='#7a2cff';ctx.shadowBlur=8;
+    xs.forEach(x=>{ctx.beginPath();ctx.moveTo(x,top);ctx.lineTo(x,H-bot);ctx.stroke()});
+    rungs.forEach(r=>{ctx.beginPath();ctx.moveTo(xs[r.a],r.y);ctx.lineTo(xs[r.a+1],r.y);ctx.stroke()});
+    ctx.shadowBlur=0;
+    paths.forEach(p=>strokePath(p.pts,p.pts.length,p.color));
+  }
+  const paths=[];
+  function strokePath(pts,upto,color){
+    ctx.strokeStyle=color;ctx.lineWidth=6;ctx.shadowColor=color;ctx.shadowBlur=14;
+    ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);
+    for(let i=1;i<upto;i++)ctx.lineTo(pts[i].x,pts[i].y);
+    ctx.stroke();ctx.shadowBlur=0;
+  }
+  function route(start){
+    const pts=[{x:xs[start],y:top}];let c=start;
+    rungs.forEach(r=>{
+      if(r.a===c){pts.push({x:xs[c],y:r.y},{x:xs[c+1],y:r.y});c++}
+      else if(r.a+1===c){pts.push({x:xs[c],y:r.y},{x:xs[c-1],y:r.y});c--}
+    });
+    pts.push({x:xs[c],y:H-bot});return{pts,end:c};
+  }
+  const nm=st.querySelector('.names'),en=st.querySelector('.ends');
+  let busy=false;
+  state.names.forEach((name,i)=>{
+    const b=document.createElement('button');b.style.left=xs[i]+'px';b.textContent=name;b.title=name;
+    b.onclick=()=>{
+      if(busy||used.has(i))return;busy=true;used.add(i);b.classList.add('used');
+      const color=colors[i%colors.length],{pts,end}=route(i);
+      // 動畫：沿路徑逐段畫線
+      const seg=[];let len=0;
+      for(let k=1;k<pts.length;k++){const d=Math.hypot(pts[k].x-pts[k-1].x,pts[k].y-pts[k-1].y);seg.push(d);len+=d}
+      const dur=Math.min(3500,900+len*2.2),t0=performance.now();
+      (function frame(now){
+        const t=Math.min(1,(now-t0)/dur);let rem=t*len;
+        base();
+        const part=[pts[0]];
+        for(let k=1;k<pts.length;k++){
+          if(rem>=seg[k-1]){part.push(pts[k]);rem-=seg[k-1]}
+          else{const f=rem/seg[k-1];part.push({x:pts[k-1].x+(pts[k].x-pts[k-1].x)*f,y:pts[k-1].y+(pts[k].y-pts[k-1].y)*f});break}
+        }
+        strokePath(part,part.length,color);
+        if(t<1)requestAnimationFrame(frame);
+        else{
+          paths.push({pts,color});base();
+          const p=state.pool[end],e=en.children[end];
+          e.classList.add('show',p>0?'pay':'safe');e.textContent=pctText(p);
+          state.results[i]=p;busy=false;finishIf();
+        }
+      })(t0);
+    };
+    nm.appendChild(b);
+  });
+  state.pool.forEach((p,i)=>{const d=document.createElement('div');d.style.left=xs[i]+'px';d.textContent='???';en.appendChild(d)});
+  base();progress();
+}
+
+/* ---------- Settlement ---------- */
+function showResult(){
+  const rows=state.names.map((n,i)=>({n,p:state.results[i]||0,amt:state.total*(state.results[i]||0)/100}));
+  state.rows=rows;
+  $('#tline').textContent=`今晚總花費 ${fmt(state.total)} 元`;
+  $('#tbody').innerHTML=rows.map(r=>`<tr><td>${esc(r.n)}</td><td>${r.p>0?r.p+'%':'<span class="zero">Safe! 免單</span>'}</td><td class="r ${r.p>0?'owe':'zero'}">${r.p>0?fmt(r.amt)+' 元':'0 元'}</td></tr>`).join('');
+  $('#copied').textContent='';$('#mask').classList.remove('hide');
+}
+$('#copy').onclick=async()=>{
+  const parts=state.rows.map(r=>r.p>0?`${r.n}付 ${r.p}% (${fmt(r.amt)}元)`:`${r.n} 免單`);
+  const text=`今晚總花費 ${fmt(state.total)} 元。${parts.join('，')}。請記得轉帳給出錢的人喔！`;
+  try{await navigator.clipboard.writeText(text)}
+  catch(e){const t=document.createElement('textarea');t.value=text;document.body.appendChild(t);t.select();document.execCommand('copy');t.remove()}
+  $('#copied').textContent='✅ 已複製到剪貼簿';
+};
+function reset(){
+  state.results=[];state.pool=[];state.run=null;
+  $('#mask').classList.add('hide');$('#game').classList.add('hide');$('#setup').classList.remove('hide');
+  $('#stage').innerHTML='';validate();
+}
+$('#restart').onclick=reset;
+$('#back').onclick=reset;
+
+renderNames();renderTickets();
+</script>
+</body>
+</html>
